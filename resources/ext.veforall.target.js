@@ -23,6 +23,7 @@
 		config.toolbarConfig.floatable = false;
 
 		this.$node = node;
+		this.pendingUpdatePromise = null;
 
 		this.toolbarAutoHide = true;
 		this.toolbarPosition = 'bottom';
@@ -143,10 +144,17 @@
 		$( this.$node ).hide()
 			.removeClass( 'oo-ui-texture-pending' ).prop( 'disabled', false );
 
-		// When editor loses focus, update the field input.
-		// this.getSurface().getView().on( 'blur', function ( data ) {
-		// target.updateContent();
-		// } );
+		$( this.$node ).data( 'veForAllTarget', this );
+		const surfaceModel = this.getSurface().getModel();
+		const docModel = surfaceModel.getDocument();
+
+		docModel.on( 'transact', function () {
+			target.$node.addClass( 've-for-all-waiting-for-update' );
+		} );
+
+		this.getSurface().getView().on( 'blur', function () {
+			target.updateContent();
+		} );
 
 		this.getSurface().on( 'switchEditor', function () {
 			target.switchEditor();
@@ -155,7 +163,6 @@
 		// show or hide toolbar when lose focus
 		this.getSurface().getView().on( 'focus', function () {
 			target.updateToolbarVisibility();
-			target.$node.addClass( 've-for-all-waiting-for-update' );
 		} );
 		target.updateToolbarVisibility();
 		this.setDir();
@@ -180,13 +187,32 @@
 	 * @return {Promise}
 	 */
 	mw.veForAll.Target.prototype.updateContent = function () {
-		var surface = this.getSurface();
-		if ( surface !== null &&
-			!$( this.$node ).is( ':visible' ) &&
-			this.$node.is( '.ve-for-all-waiting-for-update' ) ) {
-			return this.convertToWikiText( surface.getHtml() );
+		var surface = this.getSurface(),
+			resolved = $.Deferred().resolve().promise();
+
+		if ( this.pendingUpdatePromise ) {
+			return this.pendingUpdatePromise;
 		}
-		return $().promise();
+
+		if ( surface === null ) {
+			return resolved;
+		}
+
+		if ( $( this.$node ).is( ':visible' ) ) {
+			return resolved;
+		}
+
+		if ( !this.$node.is( '.ve-for-all-waiting-for-update' ) ) {
+			return resolved;
+		}
+
+		this.pendingUpdatePromise = this.convertToWikiText( surface.getHtml() );
+
+		this.pendingUpdatePromise.always( () => {
+			this.pendingUpdatePromise = null;
+		} );
+
+		return this.pendingUpdatePromise;
 	};
 
 	mw.veForAll.Target.prototype.getPageName = function () {
@@ -238,7 +264,6 @@
 			wikitextVal;
 
 		$( this.$node )
-			.prop( 'disabled', true )
 			.addClass( 'oo-ui-texture-pending' );
 
 		$( this.$element ).addClass( 'oo-ui-texture-pending' );
@@ -258,10 +283,10 @@
 				wikitextVal = target.escapePipesInTables( wikitextVal );
 			}
 			$( target.$node ).val( wikitextVal );
+			$( target.$node ).trigger( 'input' );
 			$( target.$node ).trigger( 'change' );
 
 			$( target.$node )
-				.prop( 'disabled', false )
 				.removeClass( 'oo-ui-texture-pending ve-for-all-waiting-for-update' );
 
 			$( target.$element ).removeClass( 'oo-ui-texture-pending' );
@@ -287,7 +312,6 @@
 			newFormat = 'html';
 
 		$( this.$node )
-			.prop( 'disabled', true )
 			.addClass( 'oo-ui-texture-pending' );
 
 		new mw.Api().post( {
@@ -375,6 +399,74 @@
 		toolbar.initialize();
 		this.getActions().initialize();
 	};
+
+	mw.veForAllUpdateAllFields = function () {
+		var promises = [];
+
+		$( '.visualeditor' ).each( function () {
+			var $textarea = $( this ),
+				target = $textarea.data( 'veForAllTarget' );
+
+			if (
+				target &&
+				target.getSurface &&
+				target.getSurface() !== null &&
+				!$textarea.is( ':visible' ) &&
+				target.$node.hasClass( 've-for-all-waiting-for-update' )
+			) {
+				promises.push( target.updateContent() );
+			}
+		} );
+
+		if ( promises.length === 0 ) {
+			return $.Deferred().resolve().promise();
+		}
+
+		return $.when.apply( $, promises );
+	};
+
+	$( function () {
+		$( document ).on( 'mousedown', '#wpSave, #wpPreview, #wpDiff', function () {
+			mw.veForAllUpdateAllFields();
+		} );
+
+		$( document ).on( 'submit', 'form', function ( event ) {
+			var form = this,
+				$form = $( form ),
+				submitter = event.originalEvent && event.originalEvent.submitter ?
+					event.originalEvent.submitter : null;
+
+			if ( $form.data( 'veforallBypassSubmitOnce' ) ) {
+				$form.removeData( 'veforallBypassSubmitOnce' );
+				return true;
+			}
+
+			if ( $form.find( '.visualeditor' ).length === 0 ) {
+				return true;
+			}
+
+			event.preventDefault();
+			event.stopImmediatePropagation();
+
+			mw.veForAllUpdateAllFields().always( function () {
+				$form.data( 'veforallBypassSubmitOnce', true );
+
+				window.setTimeout( function () {
+					if ( typeof form.requestSubmit === 'function' ) {
+						if ( submitter ) {
+							form.requestSubmit( submitter );
+						} else {
+							form.requestSubmit();
+						}
+					} else {
+						form.submit();
+					}
+				}, 0 );
+			} );
+
+			return false;
+		} );
+	} );
 
 	// Registration
 	ve.init.mw.targetFactory.register( mw.veForAll.Target );

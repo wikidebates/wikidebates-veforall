@@ -10,21 +10,44 @@
 
 ( function ( $, mw ) {
 
-	var veInstances = [];
+	var veInstances = [],
+		vePlatformInitPromise = null;
 
 	function initVisualEditor() {
+		if ( vePlatformInitPromise ) {
+			return vePlatformInitPromise;
+		}
+
 		// Init VisualEditor platform
-		new ve.init.mw.Platform().initialize()
+		vePlatformInitPromise = new ve.init.mw.Platform().initialize()
 			.fail( function () {
 				// $( editor ).text( 'Sorry, this browser is not supported.' );
 			} )
 			.done( function () {
 				// Add i18n messages to VE
 				ve.init.platform.addMessages( mw.messages.get() );
+				applyVisualEditorToExistingFields();
+				// Let others know we're done here
+				$( document ).trigger( 'VEForAllLoaded' );
 			} );
 
-		// Let others know we're done here
-		$( document ).trigger( 'VEForAllLoaded' );
+		return vePlatformInitPromise;
+	}
+
+	function getUninitializedVisualEditors( $root ) {
+		var $scope = $root ? $root : $( document.body );
+
+		return $scope.find( '.visualeditor' ).addBack( '.visualeditor' ).filter( function () {
+			var $textarea = $( this );
+
+			return $textarea.closest( '.multipleTemplateStarter' ).length === 0 &&
+				!$textarea.data( 'veForAllTarget' ) &&
+				!$textarea.data( 'veForAllInitializing' );
+		} );
+	}
+
+	function applyVisualEditorToExistingFields( $root ) {
+		getUninitializedVisualEditors( $root ).applyVisualEditor();
 	}
 
 	/**
@@ -35,7 +58,15 @@
 	 */
 	jQuery.fn.applyVisualEditor = function () {
 		return this.each( function () {
-			var veEditor = new mw.veForAll.Editor( this, $( this ).val() );
+			var $textarea = $( this ),
+				veEditor;
+
+			if ( $textarea.data( 'veForAllTarget' ) || $textarea.data( 'veForAllInitializing' ) ) {
+				return;
+			}
+
+			$textarea.data( 'veForAllInitializing', true );
+			veEditor = new mw.veForAll.Editor( this, $textarea.val() );
 			veInstances.push( veEditor );
 		} );
 	};
@@ -52,11 +83,27 @@
 		// make sure that the init code is called after the form has
 		// already been created.
 		mw.hook( 'pf.formSetupAfter' ).add( function () {
-			initVisualEditor();
+			initVisualEditor().done( function () {
+				applyVisualEditorToExistingFields( $( '#pfForm' ) );
+			} );
 		} );
 	} else {
-		initVisualEditor();
+		initVisualEditor().done( function () {
+			applyVisualEditorToExistingFields();
+		} );
 	}
+
+	mw.hook( 'pf.addTemplateInstance' ).add( function ( $newDiv ) {
+		initVisualEditor().done( function () {
+			applyVisualEditorToExistingFields( $newDiv );
+		} );
+	} );
+
+	$( function () {
+		initVisualEditor().done( function () {
+			applyVisualEditorToExistingFields( $( '#pfForm' ) );
+		} );
+	} );
 
 	mw.hook( 'pf.formValidation' ).add( function ( args ) {
 		var hasMinimizedPlainVETextarea = false;
