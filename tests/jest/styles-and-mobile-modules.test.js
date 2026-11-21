@@ -17,11 +17,11 @@ test( 'Page Forms visual-editor content keeps its horizontal padding', () => {
 	expect( rule[ 1 ] ).toMatch( /padding-right:\s*0\.75rem\s*!important/ );
 } );
 
-test( 'Minerva retains one existing form inset rather than adding the desktop inset again', () => {
+test( 'Minerva uses a small horizontal inset to align ordinary inputs without double padding', () => {
 	const css = file( 'resources/mobileToolbarFix.css' );
 	const mobileRule = css.match( /\.skin-minerva\s+#pfForm\s+\.ve-ce-documentNode\s*\{([^}]+)\}/ );
 	expect( mobileRule ).not.toBeNull();
-	expect( mobileRule[ 1 ] ).toMatch( /padding-inline:\s*0\s*!important/ );
+	expect( mobileRule[ 1 ] ).toMatch( /padding-inline:\s*0\.25rem\s*!important/ );
 	// The desktop rule is kept as a fallback for Vector-2022.
 	expect( file( 'resources/VEForAll.css' ) ).toMatch( /padding-left:\s*0\.75rem\s*!important/ );
 } );
@@ -39,7 +39,13 @@ test( 'Minerva toolbar groups remain on one horizontally scrollable row', () => 
 	expect( bar ).not.toBeNull();
 	expect( bar[ 1 ] ).toMatch( /display:\s*flex/ );
 	expect( bar[ 1 ] ).toMatch( /flex-wrap:\s*nowrap/ );
-	expect( bar[ 1 ] ).toMatch( /overflow-x:\s*auto/ );
+	expect( bar[ 1 ] ).toMatch( /overflow:\s*visible/ );
+	expect( bar[ 1 ] ).not.toMatch( /overflow-x:\s*auto/ );
+	const scrollport = css.match( /\.skin-minerva \.ve-area-wrapper \.ve-ui-toolbar > \.oo-ui-toolbar-bar > \.oo-ui-toolbar-tools:not\( \.oo-ui-toolbar-after \)\s*\{([^}]+)\}/ );
+	expect( scrollport ).not.toBeNull();
+	expect( scrollport[ 1 ] ).toMatch( /overflow-x:\s*auto/ );
+	expect( scrollport[ 1 ] ).toMatch( /flex:\s*1 1 auto/ );
+	expect( scrollport[ 1 ] ).toMatch( /min-width:\s*0/ );
 	// Both regular tools and the right-aligned action group are bar children.
 	expect( css ).toContain( '> .oo-ui-toolbar-bar > .oo-ui-toolbar-tools' );
 	expect( css ).toContain( '> .oo-ui-toolbar-bar > .oo-ui-toolbar-actions' );
@@ -53,8 +59,10 @@ test( 'Minerva toolbar styling does not reshape OOUI dropdown menus', () => {
 	expect( css ).not.toMatch( /\.oo-ui-toolbar-popups\s*\{/ );
 	expect( css ).not.toMatch( /\.oo-ui-toolGroup-tools\s*\{/ );
 	expect( css ).not.toMatch( /\.oo-ui-widget\.oo-ui-buttonTool\s*[,\{]/ );
-	// Scrolling belongs to the bar rather than the popup overlay.
+	// Only the main button row scrolls; root, bar and popup overlay stay visible.
 	expect( css ).not.toMatch( /\.ve-ui-toolbar\s*\{[^}]*overflow-x:\s*auto/s );
+	expect( css ).toMatch( /\.ve-ui-toolbar\s*\{[^}]*overflow:\s*visible/s );
+	expect( css ).toMatch( /> \.oo-ui-toolbar-bar\s*\{[^}]*overflow:\s*visible/s );
 } );
 
 test( 'mobile bundle depends only on existing MediaWiki 1.43 module names', () => {

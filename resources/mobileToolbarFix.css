@@ -1,14 +1,15 @@
 /*
- * VEForAll on Minerva: keep the toolbar as one horizontally scrollable row.
- * OOUI's narrow mode changes toolbar white-space to normal, and the old
- * MobileDeps CSS applied flexbox to inner groups and popup contents. Both
- * can cause individual tools to stack vertically.
+ * VEForAll on Minerva: preserve the OOUI toolbar layout and let long
+ * tool rows scroll horizontally, without clipping dropdown menus.
  *
- * Scroll the toolbar BAR, not its root: OOUI attaches its popup overlay
- * beside the bar and dropdown menus must remain outside the scrollport.
+ * OOUI appends popup-group menus to toolbar.$popups, outside the toolbar
+ * bar. Only the primary button row should become a scroll container.
+ * Putting overflow-x:auto on the bar also makes overflow-y:auto and
+ * cuts off the vertically expanding menus.
  */
 .skin-minerva .ve-area-wrapper .ve-ui-toolbar {
 	max-width: 100%;
+	overflow: visible;
 }
 
 .skin-minerva .ve-area-wrapper .ve-ui-toolbar > .oo-ui-toolbar-bar {
@@ -17,15 +18,24 @@
 	align-items: center;
 	min-width: 0;
 	max-width: 100%;
+	overflow: visible;
+}
+
+/* The main row is the sole scrollport; the "after" tools, actions and
+ * OOUI popup overlay remain outside it and retain their own layout.
+ */
+.skin-minerva .ve-area-wrapper .ve-ui-toolbar > .oo-ui-toolbar-bar > .oo-ui-toolbar-tools:not( .oo-ui-toolbar-after ) {
+	display: flex;
+	flex: 1 1 auto;
+	align-items: center;
+	min-width: 0;
 	overflow-x: auto;
 	overscroll-behavior-x: contain;
 	-webkit-overflow-scrolling: touch;
+	white-space: nowrap !important;
 }
 
-/* OOUI renders regular groups, right-aligned groups and actions as siblings.
- * Keep each of these siblings on the same line, even in narrow mode.
- */
-.skin-minerva .ve-area-wrapper .ve-ui-toolbar > .oo-ui-toolbar-bar > .oo-ui-toolbar-tools,
+.skin-minerva .ve-area-wrapper .ve-ui-toolbar > .oo-ui-toolbar-bar > .oo-ui-toolbar-after,
 .skin-minerva .ve-area-wrapper .ve-ui-toolbar > .oo-ui-toolbar-bar > .oo-ui-toolbar-actions {
 	display: inline-flex;
 	flex: 0 0 auto;
@@ -34,8 +44,8 @@
 	white-space: nowrap !important;
 }
 
-/* Do not style .oo-ui-toolGroup-tools: menu/list contents and their popup
- * layout must remain controlled by OOUI itself.
+/* Only top-level tool groups are flex items; never force the internal
+ * layout of dropdown lists, buttons, or the floating popup contents.
  */
 .skin-minerva .ve-area-wrapper .ve-ui-toolbar > .oo-ui-toolbar-bar > .oo-ui-toolbar-tools > .oo-ui-toolGroup {
 	display: inline-block;
@@ -43,10 +53,11 @@
 	vertical-align: middle;
 }
 
-/* Inside Page Forms the mobile skin already supplies the text inset.
- * The desktop-specific 0.75rem override would create a second inset.
- * Leave VEForAll's non-form and desktop editors unchanged.
+/* Keep the mobile editor text aligned with Page Forms' ordinary inputs.
+ * On this skin the wrapper already provides most of the horizontal inset,
+ * so adding the full desktop 0.75rem creates double padding; using zero
+ * leaves the editor text a few pixels too far left.
  */
 .skin-minerva #pfForm .ve-ce-documentNode {
-	padding-inline: 0 !important;
+	padding-inline: 0.25rem !important;
 }
