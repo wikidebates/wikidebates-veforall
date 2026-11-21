@@ -179,6 +179,7 @@ class VEForAllHooks {
 	 * @throws MWException
 	 */
 	public static function onMakeGlobalVariablesScript( &$vars, $out ) {
+		$vars['wgVEForAllLazyPageForms'] = (bool)$out->getConfig()->get( 'VEForAllLazyPageForms' );
 		$vars[ 'VEForAllToolbarNormal' ] = self::getVeToolbarConfig( 'normal' );
 		$vars[ 'VEForAllToolbarWide' ] = self::getVeToolbarConfig( 'wide' );
 	}
