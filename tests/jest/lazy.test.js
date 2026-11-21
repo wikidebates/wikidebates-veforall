@@ -94,7 +94,7 @@ test( 'visibility can start the editor without a focus event', async () => {
 	observe.callback( [ { target: env.$field[ 0 ], isIntersecting: true } ] );
 	await mw.veForAllWaitForPending( $( '#pfForm' ) );
 	expect( editor ).toHaveBeenCalledTimes( 1 );
-	expect( env.using ).toHaveBeenCalledWith( 'ext.veforall.core' );
+	expect( env.using ).toHaveBeenCalledWith( [ 'ext.veforall.core', 'ext.veforall.core.desktop' ] );
 } );
 
 test( 'failed ResourceLoader fetch restores the textarea and allows retry', async () => {
@@ -120,4 +120,11 @@ test( 'non-Page Forms use and disabled lazy option still start eagerly', async (
 	await flush();
 	expect( env.using ).toHaveBeenCalled();
 	expect( editor ).toHaveBeenCalledTimes( 1 );
+} );
+
+test( 'mobile Page Forms do not request desktop-only VE modules', async () => {
+	const env = await boot( { wgVEForAllLazyPageForms: true, skin: 'minerva' } );
+	env.$field.trigger( 'focusin' );
+	await mw.veForAllWaitForPending( $( '#pfForm' ) );
+	expect( env.using ).toHaveBeenCalledWith( [ 'ext.veforall.core' ] );
 } );
