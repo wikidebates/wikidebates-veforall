@@ -44,8 +44,20 @@
 		// The main module should already be loaded.
 		modules = mw.config.get( 'wgVisualEditorConfig' ).pluginModules.filter( mw.loader.getState );
 
-		// load dependencies & init editor
-		mw.loader.using( modules, this.init.bind( this, content || '' ) );
+		// Keep a completion promise so Page Forms can wait before serializing.
+		this.readyPromise = new Promise( ( resolve, reject ) => {
+			this._resolveReady = resolve;
+			this._rejectReady = reject;
+		} );
+		// Consumers outside Page Forms may not await the promise.
+		this.readyPromise.catch( () => {} );
+		Promise.resolve( mw.loader.using( modules ) )
+			.then( () => this.init( content || '' ) )
+			.catch( ( error ) => {
+				this.$node.removeData( 'veForAllInitializing' ).prop( 'disabled', false )
+					.removeClass( 'oo-ui-texture-pending' );
+				this._rejectReady( error );
+			} );
 	};
 
 	OO.mixinClass( mw.veForAll.Editor, OO.EventEmitter );
@@ -86,6 +98,8 @@
 					.css( 'overflow-y', 'auto' );
 			}
 
+			self.$node.removeData( 'veForAllInitializing' );
+			self._resolveReady();
 			mw.hook( 'veForAll.targetCreated' ).fire( this );
 		} );
 
