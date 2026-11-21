@@ -45,7 +45,7 @@
 	OO.inheritClass( mw.veForAll.Target, ve.init.mw.Target );
 
 	mw.veForAll.Target.prototype.init = function ( content ) {
-		this.convertToHtml( content );
+		this.initializationPromise = this.convertToHtml( content );
 	};
 
 	// Static
@@ -314,7 +314,7 @@
 		$( this.$node )
 			.addClass( 'oo-ui-texture-pending' );
 
-		new mw.Api().post( {
+		return new mw.Api().post( {
 			action: 'veforall-parsoid-utils',
 			from: oldFormat,
 			to: newFormat,
@@ -342,7 +342,13 @@
 			}
 
 		} ).fail( function () {
-			// console.log( 'Error converting to html' );
+			// A failed first conversion must not strand a disabled source field.
+			$( target.$node ).prop( 'disabled', false )
+				.removeClass( 'oo-ui-texture-pending' ).show();
+			if ( target.$element ) {
+				$( target.$element ).removeClass( 'oo-ui-texture-pending' );
+			}
+			target.emit( 'editor-error' );
 		} );
 	};
 

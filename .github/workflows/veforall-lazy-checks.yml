@@ -1,0 +1,46 @@
+{
+	"name": "VEForAll lazy editor checks",
+	"on": {
+		"push": {
+			"branches": [
+				"improve/veforall-lazy-pageforms-2026-11-21"
+			]
+		},
+		"pull_request": {}
+	},
+	"permissions": {
+		"contents": "read"
+	},
+	"jobs": {
+		"jest": {
+			"runs-on": "ubuntu-latest",
+			"timeout-minutes": 10,
+			"steps": [
+				{
+					"uses": "actions/checkout@v5",
+					"with": {
+						"persist-credentials": false
+					}
+				},
+				{
+					"uses": "actions/setup-node@v5",
+					"with": {
+						"node-version": 22
+					}
+				},
+				{
+					"name": "Install isolated runner",
+					"run": "mkdir -p /tmp/veforall-test\nprintf '{\"private\":true}' > /tmp/veforall-test/package.json\nnpm install --prefix /tmp/veforall-test --ignore-scripts --no-audit --no-fund --save-exact jest@29.7.0 jest-environment-jsdom@29.7.0 jquery@3.7.1\nln -s /tmp/veforall-test/node_modules node_modules"
+				},
+				{
+					"name": "Syntax and structured config",
+					"run": "node --check resources/VEForAll.js\nnode --check resources/ext.veforall.editor.js\nnode --check resources/ext.veforall.target.js\nphp -l includes/VEForAllHooks.php\nnode -e \"JSON.parse(require('fs').readFileSync('extension.json','utf8'))\""
+				},
+				{
+					"name": "Verify offscreen, focus, save wait and fallback",
+					"run": "node_modules/.bin/jest tests/jest/lazy.test.js --runInBand --config '{\"testEnvironment\":\"jsdom\"}'"
+				}
+			]
+		}
+	}
+}

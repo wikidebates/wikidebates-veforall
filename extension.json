@@ -22,6 +22,9 @@
 		"BeforePageDisplay": "VEForAll\\VEForAllHooks::onBeforePageDisplay",
 		"MakeGlobalVariablesScript": "VEForAll\\VEForAllHooks::onMakeGlobalVariablesScript"
 	},
+	"config": {
+		"VEForAllLazyPageForms": true
+	},
 	"MessagesDirs": {
 		"VEForAll": [
 			"i18n"
@@ -68,7 +71,6 @@
 				"veforall-form-instances-not-minimized"
 			],
 			"dependencies": [
-				"ext.veforall.core",
 				"mediawiki.confirmCloseWindow"
 			]
 		}
