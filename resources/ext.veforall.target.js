@@ -34,6 +34,11 @@
 			config.toolbarConfig.floatable = false;
 		}
 
+		// OOUI uses its own position setting to decide which way popup
+		// toolgroups open. Match that to the actual toolbar DOM placement:
+		// below the editor by default, above it with toolbarOnTop.
+		config.toolbarConfig.position = this.toolbarPosition;
+
 		mw.veForAll.Target.parent.call( this, config );
 
 		// HACK: stop VE's education popups from appearing (T116643)
