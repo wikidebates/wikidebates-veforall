@@ -159,6 +159,14 @@ class VEForAllHooks {
 	 * @param Skin $skin Skin object that will be used to generate the page
 	 */
 	public static function onBeforePageDisplay( $output, $skin ) {
+		// Page Forms loads VE modules on first visible/focused editor. Other
+		// contexts, including Flow, keep their original eager desktop setup.
+		$title = $output->getTitle();
+		$isFormEdit = $output->getRequest()->getVal( 'action' ) === 'formedit' ||
+			( $title && $title->isSpecial( 'FormEdit' ) );
+		if ( $output->getConfig()->get( 'VEForAllLazyPageForms' ) && $isFormEdit ) {
+			return;
+		}
 		$services = MediaWikiServices::getInstance();
 		if ( !(
 			ExtensionRegistry::getInstance()->isLoaded( 'MobileFrontend' ) &&
