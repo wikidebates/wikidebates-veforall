@@ -32,7 +32,11 @@
 		}
 		// Loading the large VE modules is delayed together with the editor.
 		const modules = [ 'ext.veforall.core' ];
-		if ( mw.config.get( 'skin' ) !== 'minerva' ) {
+		if ( mw.config.get( 'skin' ) === 'minerva' ) {
+			// Minerva needs the mobile VE bundle. Load it only when an editor
+			// is requested, not on every page containing a Page Forms field.
+			modules.push( 'ext.veforall.core.mobile' );
+		} else {
 			modules.push( 'ext.veforall.core.desktop' );
 		}
 		vePlatformInitPromise = Promise.resolve( mw.loader.using( modules ) )

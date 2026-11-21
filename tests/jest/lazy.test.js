@@ -122,11 +122,22 @@ test( 'non-Page Forms use and disabled lazy option still start eagerly', async (
 	expect( editor ).toHaveBeenCalledTimes( 1 );
 } );
 
+test( 'offscreen mobile Page Forms preserve lazy-loading of core and mobile dependencies', async () => {
+	const env = await boot( { wgVEForAllLazyPageForms: true, skin: 'minerva' } );
+	expect( env.using ).not.toHaveBeenCalled();
+	expect( env.$field.prop( 'disabled' ) ).toBe( false );
+	const $field = env.$field;
+	$field.trigger( 'focusin' );
+	await mw.veForAllWaitForPending( $( '#pfForm' ) );
+	expect( env.using ).toHaveBeenCalledWith( [ 'ext.veforall.core', 'ext.veforall.core.mobile' ] );
+	expect( env.using ).not.toHaveBeenCalledWith( [ 'ext.veforall.core.desktop' ] );
+} );
+
 test( 'mobile Page Forms do not request desktop-only VE modules', async () => {
 	const env = await boot( { wgVEForAllLazyPageForms: true, skin: 'minerva' } );
 	env.$field.trigger( 'focusin' );
 	await mw.veForAllWaitForPending( $( '#pfForm' ) );
-	expect( env.using ).toHaveBeenCalledWith( [ 'ext.veforall.core' ] );
+	expect( env.using ).toHaveBeenCalledWith( [ 'ext.veforall.core', 'ext.veforall.core.mobile' ] );
 } );
 
 
