@@ -53,6 +53,10 @@ async function boot( config = {}, form = true ) {
 			platform: { addMessages: jest.fn() } }
 	};
 	Function( 'jQuery', 'mediaWiki', 've', source )( $, mw, ve );
+	// Page Forms can render after document.ready; exercise the real setup hook.
+	if ( form ) {
+		hooks[ 'pf.formSetupAfter' ].fire();
+	}
 	await flush();
 	return { $field: $( '#body' ), using, platformInit, hooks, editor };
 }
