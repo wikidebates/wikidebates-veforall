@@ -30,7 +30,9 @@ beforeEach( () => {
 		msg: ( name ) => name
 	};
 
-	const baseTarget = function () {};
+	const baseTarget = function ( config ) {
+		this.configReceivedByParent = config;
+	};
 	baseTarget.static = {
 		importRules: { external: { blacklist: [ 'link/mwExternal', 'another-rule' ] } }
 	};
@@ -92,6 +94,28 @@ test( 'the default and switchable action groups are named', () => {
 
 	mw.veForAll.Target.static.setSwitchable( false );
 	expect( mw.veForAll.Target.static.actionGroups ).toEqual( [] );
+} );
+
+
+test.each( [
+	[ 'bottom', false ],
+	[ 'top', true ]
+] )( 'OOUI popup positioning matches actual %s toolbar placement', ( position, toolbarOnTop ) => {
+	const $node = $( '<textarea>' ).toggleClass( 'toolbarOnTop', toolbarOnTop );
+	for ( const Target of [ mw.veForAll.Target, mw.veForAll.Targetwide ] ) {
+		// Avoid Parsoid conversion in this constructor-only test.
+		const originalInit = Target.prototype.init;
+		Target.prototype.init = jest.fn();
+		try {
+			const target = new Target( $node, '' );
+			expect( target.toolbarPosition ).toBe( position );
+			expect( target.configReceivedByParent.toolbarConfig.position ).toBe( position );
+			expect( target.configReceivedByParent.toolbarConfig.actions ).toBe( true );
+			expect( target.configReceivedByParent.toolbarConfig.floatable ).toBe( false );
+		} finally {
+			Target.prototype.init = originalInit;
+		}
+	}
 } );
 
 test.each( [ 'top', 'bottom' ] )(
