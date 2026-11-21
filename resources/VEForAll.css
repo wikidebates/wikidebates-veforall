@@ -29,6 +29,15 @@
 	min-height: 130px;
 }
 
+/* Page Forms editors must keep the same horizontal inset as other fields.
+ * Do not apply the override to VisualEditor used by Flow or other consumers.
+ * The higher-priority declaration protects against skin/form CSS resets.
+ */
+#pfForm .ve-ce-documentNode {
+	padding-left: 0.75rem !important;
+	padding-right: 0.75rem !important;
+}
+
 .ve-area-wrapper .oo-ui-toolbar-bar .oo-ui-toolbar-actions .oo-ui-toolbar-bar {
 	border-top: 0;
 }
