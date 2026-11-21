@@ -65,6 +65,35 @@ test( 'Minerva toolbar styling does not reshape OOUI dropdown menus', () => {
 	expect( css ).toMatch( /> \.oo-ui-toolbar-bar\s*\{[^}]*overflow:\s*visible/s );
 } );
 
+test( 'Minerva gives adjacent VEForAll mobile buttons their intrinsic widths', () => {
+	const css = file( 'resources/mobileToolbarFix.css' );
+	expect( css ).toMatch(
+		/\.skin-minerva \.ve-area-wrapper \.ve-ui-targetToolbar-mobile \.oo-ui-toolbar-tools > \.oo-ui-barToolGroup > \.oo-ui-toolGroup-tools > \.oo-ui-tool\s*\{\s*width:\s*auto\s*;/
+	);
+	// Never force OOUI popup contents themselves into flex layouts.
+	expect( css ).not.toMatch( /\.oo-ui-toolGroup-tools\s*\{\s*display:\s*flex/ );
+} );
+
+test( 'Minerva aligns Paragraphe and reserves Wikicode action spacing', () => {
+	const css = file( 'resources/mobileToolbarFix.css' );
+	const start = css.indexOf( '.ve-ui-toolbar-group-veforall-normal-0.oo-ui-indicatorElement' );
+	expect( start ).toBeGreaterThan( -1 );
+	const handleRule = css.slice( start, css.indexOf( '}', start ) );
+	expect( handleRule ).toMatch( /padding:\s*11px 24px 11px 12px !important/ );
+	expect( handleRule ).toMatch( /min-width:\s*120px/ );
+	expect( css ).toContain( '.ve-ui-toolbar-group-veforall-wide-0.oo-ui-indicatorElement' );
+	const indicator = css.indexOf(
+		'.ve-ui-toolbar-group-veforall-normal-0 > .oo-ui-popupToolGroup-handle > .oo-ui-indicatorElement-indicator'
+	);
+	expect( indicator ).toBeGreaterThan( -1 );
+	const indicatorRule = css.slice( indicator, css.indexOf( '}', indicator ) );
+	expect( indicatorRule ).toMatch( /left:\s*auto/ );
+	expect( indicatorRule ).toMatch( /right:\s*0\.7em/ );
+	expect( css ).toMatch(
+		/\.skin-minerva \.ve-area-wrapper \.oo-ui-tool-name-ve4aSwitchEditor\s*\{\s*margin-inline-end:\s*12px\s*;/
+	);
+} );
+
 test( 'mobile bundle depends only on existing MediaWiki 1.43 module names', () => {
 	const manifest = JSON.parse( file( 'extension.json' ) );
 	const mobile = manifest.ResourceModules[ 'ext.veforall.core.mobile' ];

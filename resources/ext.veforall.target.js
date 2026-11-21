@@ -133,6 +133,54 @@
 	};
 
 	/**
+	 * OOUI clips dropdowns to the closest scrolling ancestor. On Minerva,
+	 * VEForAll's horizontally scrollable toolbar row is too short to be a
+	 * vertical clipping boundary for popup menus. Override this lookup only
+	 * for the popup groups belonging to the current VEForAll target.
+	 */
+	mw.veForAll.Target.prototype.fixMinervaToolbarMenuClipping = function () {
+		if ( !document.body.classList.contains( 'skin-minerva' ) ||
+			!this.$node.closest( '.ve-area-wrapper' ).length
+		) {
+			return;
+		}
+
+		var toolbar = this.getToolbar();
+
+		function useViewportClipping( group ) {
+			if ( !group ||
+				typeof group.getClosestScrollableElementContainer !== 'function' ||
+				typeof group.toggleClipping !== 'function'
+			) {
+				return;
+			}
+
+			group.getClosestScrollableElementContainer = function () {
+				return this.getElementDocument().documentElement;
+			};
+
+			// Recalculate a menu which is already open, if any.
+			if ( group.isActive && group.isActive() ) {
+				group.toggleClipping( false );
+				group.toggleClipping( true );
+			}
+		}
+
+		( toolbar.items || [] ).forEach( function ( group ) {
+			useViewportClipping( group );
+
+			// Style is a ToolGroupTool with its own nested popup group.
+			Object.keys( group.tools || {} ).forEach( function ( name ) {
+				var tool = group.tools[ name ];
+
+				if ( tool && tool.innerToolGroup ) {
+					useViewportClipping( tool.innerToolGroup );
+				}
+			} );
+		} );
+	};
+
+	/**
 	 * Create a new surface with VisualEditor, and add it to the target.
 	 *
 	 * @param {string} content text to initiate content, in html format
@@ -186,6 +234,7 @@
 		target.getToolbar().onWindowResize();
 		target.onToolbarResize();
 		target.onContainerScroll();
+		target.fixMinervaToolbarMenuClipping();
 
 		// emit ready-state event
 		target.emit( 'editor-ready' );

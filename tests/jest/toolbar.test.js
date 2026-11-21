@@ -13,6 +13,7 @@ let toolbarConfig;
 
 beforeEach( () => {
 	document.body.innerHTML = '';
+	document.body.className = '';
 	toolbarConfig = {
 		VEForAllToolbarNormal: [
 			{ name: 'custom-format', header: 'format', include: { group: 'format' } },
@@ -116,6 +117,73 @@ test.each( [
 			Target.prototype.init = originalInit;
 		}
 	}
+} );
+
+test.each( [ 'normal', 'wide' ] )(
+	'Minerva fixes %s toolbar popup clipping, including nested Style',
+	( kind ) => {
+		document.body.className = 'skin-minerva';
+		const $node = $( '<textarea>' ).appendTo(
+			$( '<div class="ve-area-wrapper">' ).appendTo( document.body )
+		);
+		const popup = ( active ) => ( {
+			getElementDocument: () => document,
+			getClosestScrollableElementContainer: () => document.body,
+			toggleClipping: jest.fn(),
+			isActive: () => active
+		} );
+		const paragraph = popup( false );
+		const styleMenu = popup( true );
+		const structure = popup( false );
+		const insert = popup( false );
+		const bar = { tools: { moreTextStyle: { innerToolGroup: styleMenu } } };
+		const toolbar = { items: [ paragraph, bar, structure, insert ] };
+		const Target = kind === 'wide' ? mw.veForAll.Targetwide : mw.veForAll.Target;
+		const target = Object.create( Target.prototype );
+		target.$node = $node;
+		target.getToolbar = jest.fn( () => toolbar );
+
+		target.fixMinervaToolbarMenuClipping();
+
+		expect( target.getToolbar ).toHaveBeenCalledTimes( 1 );
+		[ paragraph, styleMenu, structure, insert ].forEach( ( group ) => {
+			expect( group.getClosestScrollableElementContainer() ).toBe(
+				document.documentElement
+			);
+		} );
+		expect( styleMenu.toggleClipping.mock.calls ).toEqual( [
+			[ false ], [ true ]
+		] );
+		expect( paragraph.toggleClipping ).not.toHaveBeenCalled();
+		expect( structure.toggleClipping ).not.toHaveBeenCalled();
+		expect( insert.toggleClipping ).not.toHaveBeenCalled();
+	}
+);
+
+test( 'OOUI clipping is unchanged outside Minerva VEForAll wrappers', () => {
+	const originalContainer = jest.fn( () => document.body );
+	const menu = {
+		getClosestScrollableElementContainer: originalContainer,
+		toggleClipping: jest.fn()
+	};
+	const $node = $( '<textarea>' ).appendTo( document.body );
+	const target = Object.create( mw.veForAll.Target.prototype );
+	target.$node = $node;
+	target.getToolbar = jest.fn( () => ( { items: [ menu ] } ) );
+
+	target.fixMinervaToolbarMenuClipping();
+	expect( target.getToolbar ).not.toHaveBeenCalled();
+
+	document.body.className = 'skin-minerva';
+	target.fixMinervaToolbarMenuClipping();
+	expect( target.getToolbar ).not.toHaveBeenCalled();
+	expect( menu.getClosestScrollableElementContainer ).toBe( originalContainer );
+} );
+
+test( 'the popup clipping fix runs after toolbar geometry is initialized', () => {
+	expect( targetSource ).toMatch(
+		/target\.onContainerScroll\(\);\s*target\.fixMinervaToolbarMenuClipping\(\);\s*\/\/ emit ready-state event/
+	);
 } );
 
 test.each( [ 'top', 'bottom' ] )(
