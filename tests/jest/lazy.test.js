@@ -128,3 +128,23 @@ test( 'mobile Page Forms do not request desktop-only VE modules', async () => {
 	await mw.veForAllWaitForPending( $( '#pfForm' ) );
 	expect( env.using ).toHaveBeenCalledWith( [ 'ext.veforall.core' ] );
 } );
+
+
+test( 'failed editor readiness leaves the raw textarea usable for another attempt', async () => {
+	const env = await boot( { wgVEForAllLazyPageForms: true } );
+	const destroy = jest.fn();
+	env.editor.mockImplementationOnce( function ( element ) {
+		this.$node = $( element );
+		this.readyPromise = Promise.reject( new Error( 'Parsoid offline' ) );
+		this.destroy = destroy;
+	} );
+	env.$field.trigger( 'focusin' );
+	await expect( mw.veForAllWaitForPending( $( '#pfForm' ) ) ).rejects.toThrow( 'Parsoid offline' );
+	await flush();
+	expect( destroy ).toHaveBeenCalledTimes( 1 );
+	expect( env.$field.val() ).toBe( 'First' );
+	expect( env.$field.prop( 'disabled' ) ).toBe( false );
+	env.$field.trigger( 'pointerdown' );
+	await mw.veForAllWaitForPending( $( '#pfForm' ) );
+	expect( env.editor ).toHaveBeenCalledTimes( 2 );
+} );
