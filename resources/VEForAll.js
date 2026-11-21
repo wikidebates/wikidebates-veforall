@@ -9,6 +9,7 @@
 	const veInstances = [];
 	let vePlatformInitPromise = null;
 	let observer;
+	let firstEditorReady = false;
 	const registered = new WeakSet();
 
 	function isLazyPageFormsField( element ) {
@@ -34,6 +35,9 @@
 			.then( () => new ve.init.mw.Platform().initialize() )
 			.then( () => {
 				ve.init.platform.addMessages( mw.messages.get() );
+				if ( window.performance && window.performance.mark ) {
+					window.performance.mark( 'veforall-platform-ready' );
+				}
 				$( document ).trigger( 'VEForAllLoaded' );
 			} ).catch( ( error ) => {
 				// A failed dependency fetch must not permanently break retry.
@@ -63,7 +67,21 @@
 			// have typed into it while ResourceLoader was fetching scripts.
 			const editor = new mw.veForAll.Editor( $textarea[ 0 ], $textarea.val() );
 			veInstances.push( editor );
-			return editor.readyPromise;
+			return Promise.resolve( editor.readyPromise ).then( () => {
+				if ( !firstEditorReady && window.performance && window.performance.mark ) {
+					firstEditorReady = true;
+					window.performance.mark( 'veforall-first-editor-ready' );
+				}
+			} ).catch( ( error ) => {
+				const index = veInstances.indexOf( editor );
+				if ( index !== -1 ) {
+					veInstances.splice( index, 1 );
+				}
+				if ( typeof editor.destroy === 'function' ) {
+					editor.destroy();
+				}
+				throw error;
+			} );
 		} ).catch( ( error ) => {
 			$textarea.removeData( 'veForAllInitializing' )
 				.prop( 'disabled', false ).removeClass( 'oo-ui-texture-pending' );
