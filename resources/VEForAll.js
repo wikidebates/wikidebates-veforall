@@ -31,7 +31,11 @@
 			return vePlatformInitPromise;
 		}
 		// Loading the large VE modules is delayed together with the editor.
-		vePlatformInitPromise = Promise.resolve( mw.loader.using( 'ext.veforall.core' ) )
+		const modules = [ 'ext.veforall.core' ];
+		if ( mw.config.get( 'skin' ) !== 'minerva' ) {
+			modules.push( 'ext.veforall.core.desktop' );
+		}
+		vePlatformInitPromise = Promise.resolve( mw.loader.using( modules ) )
 			.then( () => new ve.init.mw.Platform().initialize() )
 			.then( () => {
 				ve.init.platform.addMessages( mw.messages.get() );
