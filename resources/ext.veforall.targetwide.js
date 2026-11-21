@@ -24,7 +24,11 @@
 
 	mw.veForAll.Targetwide.static.toolbarGroups = ( function () {
 		var toolbarConfig = JSON.parse( JSON.stringify( mw.config.get( 'VEForAllToolbarWide' ) ) );
-		return toolbarConfig.map( function ( x ) {
+		return toolbarConfig.map( function ( x, index ) {
+			// Older VEForAllToolbarConfigWide hooks may omit the group name.
+			if ( !x.name ) {
+				x.name = 'veforall-wide-' + index;
+			}
 			if ( 'header' in x ) {
 				x.header = OO.ui.deferMsg( x.header );
 			}

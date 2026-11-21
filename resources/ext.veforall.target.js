@@ -54,7 +54,12 @@
 
 	mw.veForAll.Target.static.toolbarGroups = ( function () {
 		var toolbarConfig = JSON.parse( JSON.stringify( mw.config.get( 'VEForAllToolbarNormal' ) ) );
-		return toolbarConfig.map( function ( x ) {
+		return toolbarConfig.map( function ( x, index ) {
+			// VisualEditor requires a stable name for every toolbar group.
+			// Preserve names provided by VEForAllToolbarConfigNormal hooks.
+			if ( !x.name ) {
+				x.name = 'veforall-normal-' + index;
+			}
 			if ( 'header' in x ) {
 				x.header = OO.ui.deferMsg( x.header );
 			}
@@ -66,7 +71,7 @@
 	}() );
 
 	mw.veForAll.Target.static.actionGroups = [
-		{ include: [ 've4aSwitchEditor' ] }
+		{ name: 'veforall-switch-editor', include: [ 've4aSwitchEditor' ] }
 	];
 
 	// Allow pasting links
@@ -83,6 +88,7 @@
 
 		if ( switchable ) {
 			mw.veForAll.Target.static.actionGroups = [ {
+				name: 'veforall-edit-mode',
 				type: 'list',
 				icon: 'edit',
 				title: mw.msg( 'visualeditor-mweditmode-tooltip' ),
@@ -403,7 +409,6 @@
 			$( this.$node ).after( toolbar.$element );
 		}
 		toolbar.initialize();
-		this.getActions().initialize();
 	};
 
 	mw.veForAllUpdateAllFields = function () {

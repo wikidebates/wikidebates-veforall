@@ -34,11 +34,11 @@
 				},
 				{
 					"name": "Syntax and structured config",
-					"run": "node --check resources/VEForAll.js\nnode --check resources/ext.veforall.editor.js\nnode --check resources/ext.veforall.target.js\nphp -l includes/VEForAllHooks.php\nnode -e \"JSON.parse(require('fs').readFileSync('extension.json','utf8'))\""
+					"run": "node --check resources/VEForAll.js\nnode --check resources/ext.veforall.editor.js\nnode --check resources/ext.veforall.target.js\nnode --check resources/ext.veforall.targetwide.js\nphp -l includes/VEForAllHooks.php\nnode -e \"JSON.parse(require('fs').readFileSync('extension.json','utf8'))\""
 				},
 				{
-					"name": "Verify offscreen, focus, save wait and fallback",
-					"run": "node_modules/.bin/jest tests/jest/lazy.test.js --runInBand --config '{\"testEnvironment\":\"jsdom\"}'"
+					"name": "Verify lazy editor behavior and VisualEditor toolbar compatibility",
+					"run": "node_modules/.bin/jest tests/jest/ --runInBand --config '{\"testEnvironment\":\"jsdom\"}'"
 				}
 			]
 		}
