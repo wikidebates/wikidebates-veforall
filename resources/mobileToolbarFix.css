@@ -53,6 +53,38 @@
 	vertical-align: middle;
 }
 
+/*
+ * VisualEditor's mobile layout gives every bar tool 100% width.
+ * VEForAll keeps Bold, Italic and Style in one group, so those full
+ * widths overlap the following groups unless intrinsic widths are used.
+ */
+.skin-minerva .ve-area-wrapper .ve-ui-targetToolbar-mobile .oo-ui-toolbar-tools > .oo-ui-barToolGroup > .oo-ui-toolGroup-tools > .oo-ui-tool {
+	width: auto;
+}
+
+/*
+ * VE's mobile indicator padding places the format label under the row.
+ * Keep only VEForAll's format handles aligned with the adjacent buttons.
+ */
+.skin-minerva .ve-area-wrapper .ve-ui-targetToolbar-mobile .oo-ui-toolbar-tools > .ve-ui-toolbar-group-veforall-normal-0.oo-ui-indicatorElement > .oo-ui-popupToolGroup-handle,
+.skin-minerva .ve-area-wrapper .ve-ui-targetToolbar-mobile .oo-ui-toolbar-tools > .ve-ui-toolbar-group-veforall-wide-0.oo-ui-indicatorElement > .oo-ui-popupToolGroup-handle {
+	padding: 11px 24px 11px 12px !important;
+	min-width: 120px;
+	white-space: nowrap;
+}
+
+.skin-minerva .ve-area-wrapper .ve-ui-targetToolbar-mobile .oo-ui-toolbar-tools > .ve-ui-toolbar-group-veforall-normal-0 > .oo-ui-popupToolGroup-handle > .oo-ui-indicatorElement-indicator,
+.skin-minerva .ve-area-wrapper .ve-ui-targetToolbar-mobile .oo-ui-toolbar-tools > .ve-ui-toolbar-group-veforall-wide-0 > .oo-ui-popupToolGroup-handle > .oo-ui-indicatorElement-indicator {
+	left: auto;
+	right: 0.7em;
+	margin-left: 0;
+}
+
+/* Leave a little room after the Wikicode action at the right edge. */
+.skin-minerva .ve-area-wrapper .oo-ui-tool-name-ve4aSwitchEditor {
+	margin-inline-end: 12px;
+}
+
 /* Keep the mobile editor text aligned with Page Forms' ordinary inputs.
  * On this skin the wrapper already provides most of the horizontal inset,
  * so adding the full desktop 0.75rem creates double padding; using zero
