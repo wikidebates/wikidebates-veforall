@@ -33,6 +33,8 @@
 
 		// node the editor is associated with.
 		this.$node = $( $node );
+		// Disabling the textarea during first conversion normally drops focus.
+		this.focusOnReady = document.activeElement === this.$node[ 0 ];
 
 		// @hack: make textarea look pending in case we didn't come from an editor switch.
 		// Once this is an OO.ui.TextInputWidget we'll be able to use real PendingElement
@@ -76,6 +78,11 @@
 			this.target = new mw.veForAll.Target( this.$node, $( this.$node ).val() );
 		}
 
+		// Signal initial Parsoid failures to the caller waiting for readiness.
+		self.target.on( 'editor-error', function () {
+			self._rejectReady( new Error( 'VisualEditor initial conversion failed' ) );
+		} );
+
 		// Various tasks to do once VE has finished being applied.
 		self.target.on( 'editor-ready', function () {
 			// Catch keyup events on surface to comply with
@@ -99,6 +106,9 @@
 			}
 
 			self.$node.removeData( 'veForAllInitializing' );
+			if ( self.focusOnReady && document.activeElement === document.body ) {
+				self.target.getSurface().getView().focus();
+			}
 			self._resolveReady();
 			mw.hook( 'veForAll.targetCreated' ).fire( this );
 		} );
