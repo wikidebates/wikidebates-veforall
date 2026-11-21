@@ -15,3 +15,28 @@ to work.
 
 For more information, see the extension homepage at:
 https://www.mediawiki.org/wiki/Extension:VEForAll
+
+Wikidebates integration (MediaWiki 1.43)
+----------------------------------------
+
+The former stand-alone VEForAllMobileDeps extension has been integrated into
+this fork. On Minerva, VEForAll registers its own scoped mobile-toolbar CSS.
+The mobile VE bundles are declared as ResourceLoader dependencies of
+ext.veforall.core.mobile and are requested on first editor visibility/focus
+instead of being preloaded on every mobile page.
+
+The modules are ext.visualEditor.core.mobile and ext.visualEditor.mwcore, in
+addition to ext.veforall.core. Other dependencies such as targetLoader,
+mediawiki and base are provided by the existing module dependency graph.
+The old name ext.visualEditor.mobile is not present in MW 1.43 and has
+deliberately not been copied. The old empty mobileFix.css and unused
+mobileFix.js marker are not needed.
+
+After the farm pins a version of VEForAll containing this integration, remove
+the old wfLoadExtension( 'VEForAllMobileDeps' ); registration from the farm
+settings for each affected wiki. Do not delete the old extension files while
+the old registration is still active. On deployment, verify that both Minerva
+Page Forms and desktop/Flow editors still load, edit and save correctly.
+
+Page Forms VisualEditor content also receives 0.75rem horizontal padding,
+matching the input-field spacing. This override is limited to #pfForm.

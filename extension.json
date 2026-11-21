@@ -2,7 +2,11 @@
 	"name": "VEForAll",
 	"version": "0.6",
 	"author": [
-		"Pierre Boutet", "Clément Flipo", "Ike Hecht", "Yaron Koren", "Cindy Cicalese"
+		"Pierre Boutet",
+		"Clément Flipo",
+		"Ike Hecht",
+		"Yaron Koren",
+		"Cindy Cicalese"
 	],
 	"url": "https://www.mediawiki.org/wiki/Extension:VEForAll",
 	"descriptionmsg": "veforall-desc",
@@ -58,6 +62,13 @@
 				"ext.visualEditor.desktopTarget"
 			]
 		},
+		"ext.veforall.core.mobile": {
+			"dependencies": [
+				"ext.veforall.core",
+				"ext.visualEditor.core.mobile",
+				"ext.visualEditor.mwcore"
+			]
+		},
 		"ext.veforall.main": {
 			"scripts": [
 				"resources/VEForAll.js"
@@ -72,6 +83,11 @@
 			],
 			"dependencies": [
 				"mediawiki.confirmCloseWindow"
+			]
+		},
+		"ext.veforall.mobileToolbar": {
+			"styles": [
+				"resources/mobileToolbarFix.css"
 			]
 		}
 	},

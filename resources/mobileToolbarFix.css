@@ -1,0 +1,44 @@
+/* Integrated from Wikidebates' former VEForAllMobileDeps.
+ * Keep Minerva's VEForAll toolbar in one horizontally scrollable row.
+ * Scope to VEForAll wrappers so ordinary OOUI widgets are unaffected.
+ */
+.skin-minerva .ve-area-wrapper .ve-ui-toolbar {
+	overflow-x: auto;
+	white-space: nowrap;
+}
+
+.skin-minerva .ve-area-wrapper .ve-ui-toolbar .oo-ui-toolbar-tools,
+.skin-minerva .ve-area-wrapper .ve-ui-toolbar .oo-ui-toolbar-bar {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 0.25rem;
+	white-space: nowrap;
+}
+
+.skin-minerva .ve-area-wrapper .oo-ui-toolGroup,
+.skin-minerva .ve-area-wrapper .oo-ui-toolGroup-tools {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 0.125rem;
+}
+
+.skin-minerva .ve-area-wrapper .oo-ui-buttonElement > .oo-ui-buttonElement-button {
+	display: inline-flex;
+	width: auto;
+	min-width: auto;
+}
+
+.skin-minerva .ve-area-wrapper .oo-ui-widget.oo-ui-buttonTool,
+.skin-minerva .ve-area-wrapper .oo-ui-tool {
+	display: inline-flex;
+}
+
+.skin-minerva .ve-area-wrapper .oo-ui-dropdownWidget {
+	max-width: 100%;
+}
+
+.skin-minerva .ve-area-wrapper .ve-ui-toolbar .oo-ui-toolGroup {
+	white-space: nowrap;
+}

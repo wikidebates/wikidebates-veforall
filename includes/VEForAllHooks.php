@@ -159,6 +159,13 @@ class VEForAllHooks {
 	 * @param Skin $skin Skin object that will be used to generate the page
 	 */
 	public static function onBeforePageDisplay( $output, $skin ) {
+		// Keep the former VEForAllMobileDeps toolbar fix inside VEForAll.
+		// Only its styles are loaded eagerly; heavyweight VE dependencies
+		// are loaded by VEForAll.js when an editor becomes visible/focused.
+		if ( $skin->getSkinName() === 'minerva' ) {
+			$output->addModuleStyles( [ 'ext.veforall.mobileToolbar' ] );
+		}
+
 		// Page Forms loads VE modules on first visible/focused editor. Other
 		// contexts, including Flow, keep their original eager desktop setup.
 		$title = $output->getTitle();

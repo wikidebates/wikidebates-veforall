@@ -34,7 +34,11 @@
 				},
 				{
 					"name": "Syntax and structured config",
-					"run": "node --check resources/VEForAll.js\nnode --check resources/ext.veforall.editor.js\nnode --check resources/ext.veforall.target.js\nnode --check resources/ext.veforall.targetwide.js\nphp -l includes/VEForAllHooks.php\nnode -e \"JSON.parse(require('fs').readFileSync('extension.json','utf8'))\""
+					"run": "node --check resources/VEForAll.js\nnode --check resources/ext.veforall.editor.js\nnode --check resources/ext.veforall.target.js\nnode --check resources/ext.veforall.targetwide.js\nphp -l includes/VEForAllHooks.php\nnode -e \"JSON.parse(require('fs').readFileSync('extension.json','utf8'))\"\nphp -l tests/php/mobile-hooks-smoke.php"
+				},
+				{
+					"name": "Check Minerva hook integration (no wiki required)",
+					"run": "php tests/php/mobile-hooks-smoke.php"
 				},
 				{
 					"name": "Verify lazy editor behavior and VisualEditor toolbar compatibility",
