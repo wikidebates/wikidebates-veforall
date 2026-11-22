@@ -33,6 +33,7 @@
 
 		// node the editor is associated with.
 		this.$node = $( $node );
+		this.initCallbacks = [];
 		// Disabling the textarea during first conversion normally drops focus.
 		this.focusOnReady = document.activeElement === this.$node[ 0 ];
 
@@ -67,7 +68,7 @@
 	/**
 	 * List of callbacks to execute when VE is fully loaded
 	 */
-	mw.veForAll.Editor.prototype.initCallbacks = [];
+	// The callback queue is per editor instance (constructor), not shared.
 
 	mw.veForAll.Editor.prototype.createTarget = function () {
 		var self = this, $wrapperNode, maxHeight;

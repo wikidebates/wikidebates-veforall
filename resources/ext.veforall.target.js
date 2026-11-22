@@ -24,6 +24,7 @@
 
 		this.$node = node;
 		this.pendingUpdatePromise = null;
+		this.contentRevision = 0;
 
 		this.toolbarAutoHide = true;
 		this.toolbarPosition = 'bottom';
@@ -208,6 +209,7 @@
 		const docModel = surfaceModel.getDocument();
 
 		docModel.on( 'transact', function () {
+			target.contentRevision++;
 			target.$node.addClass( 've-for-all-waiting-for-update' );
 		} );
 
@@ -247,31 +249,38 @@
 	 * @return {Promise}
 	 */
 	mw.veForAll.Target.prototype.updateContent = function () {
-		var surface = this.getSurface(),
+		var target = this,
+			surface = this.getSurface(),
 			resolved = $.Deferred().resolve().promise();
 
 		if ( this.pendingUpdatePromise ) {
 			return this.pendingUpdatePromise;
 		}
-
-		if ( surface === null ) {
+		if ( surface === null || this.$node.is( ':visible' ) ||
+			!this.$node.hasClass( 've-for-all-waiting-for-update' )
+		) {
 			return resolved;
 		}
 
-		if ( $( this.$node ).is( ':visible' ) ) {
-			return resolved;
+		function convertLatestRevision() {
+			var revision = target.contentRevision;
+
+			// An older conversion must never overwrite newer edits.
+			return target.convertToWikiText( surface.getHtml(), function () {
+				return revision === target.contentRevision;
+			} ).then( function () {
+				if ( revision !== target.contentRevision ) {
+					// Do not resolve a save until the newest revision is serialized.
+					return convertLatestRevision();
+				}
+				target.$node.removeClass( 've-for-all-waiting-for-update' );
+			} );
 		}
 
-		if ( !this.$node.is( '.ve-for-all-waiting-for-update' ) ) {
-			return resolved;
-		}
-
-		this.pendingUpdatePromise = this.convertToWikiText( surface.getHtml() );
-
-		this.pendingUpdatePromise.always( () => {
-			this.pendingUpdatePromise = null;
+		this.pendingUpdatePromise = convertLatestRevision();
+		this.pendingUpdatePromise.always( function () {
+			target.pendingUpdatePromise = null;
 		} );
-
 		return this.pendingUpdatePromise;
 	};
 
@@ -316,47 +325,37 @@
 		return lines.join( '\n' );
 	};
 
-	mw.veForAll.Target.prototype.convertToWikiText = function ( content ) {
-		var target = this,
-			oldFormat = 'html',
-			newFormat = 'wikitext',
-			apiCall,
-			wikitextVal;
+	mw.veForAll.Target.prototype.convertToWikiText = function ( content, shouldApply ) {
+		var target = this;
 
-		$( this.$node )
-			.addClass( 'oo-ui-texture-pending' );
+		this.$node.addClass( 'oo-ui-texture-pending' );
+		this.$element.addClass( 'oo-ui-texture-pending' );
 
-		$( this.$element ).addClass( 'oo-ui-texture-pending' );
-
-		apiCall = new mw.Api().post( {
+		return new mw.Api().post( {
 			action: 'veforall-parsoid-utils',
-			from: oldFormat,
-			to: newFormat,
+			from: 'html',
+			to: 'wikitext',
 			content: content,
 			title: this.getPageName()
 		} ).then( function ( data ) {
-			wikitextVal = data[ 'veforall-parsoid-utils' ].content;
-			// Template fields can't contain wikitext tables - it
-			// will confuse the parser - so if we're editing a
-			// template field, replace every | with {{!}}.
-			if ( target.$node.hasClass( 'vePartOfTemplate' ) ) {
-				wikitextVal = target.escapePipesInTables( wikitextVal );
+			var result = data && data[ 'veforall-parsoid-utils' ];
+			if ( !result || typeof result.content !== 'string' ) {
+				throw new Error( 'VEForAll: invalid Parsoid conversion response' );
 			}
-			$( target.$node ).val( wikitextVal );
-			$( target.$node ).trigger( 'input' );
-			$( target.$node ).trigger( 'change' );
+			if ( shouldApply && !shouldApply() ) {
+				return;
+			}
 
-			$( target.$node )
-				.removeClass( 'oo-ui-texture-pending ve-for-all-waiting-for-update' );
-
-			$( target.$element ).removeClass( 'oo-ui-texture-pending' );
-
-		} ).fail( function () {
-			// console.log( 'Error converting to wikitext' );
+			var wikitext = result.content;
+			if ( target.$node.hasClass( 'vePartOfTemplate' ) ) {
+				wikitext = target.escapePipesInTables( wikitext );
+			}
+			target.$node.val( wikitext ).trigger( 'input' ).trigger( 'change' );
+		} ).always( function () {
+			// Also reset indicators when a request fails.
+			target.$node.removeClass( 'oo-ui-texture-pending' );
+			target.$element.removeClass( 'oo-ui-texture-pending' );
 		} );
-
-		return apiCall;
-
 	};
 	mw.veForAll.Target.prototype.setDir = function () {
 		var view = this.surface.getView(),
@@ -465,10 +464,10 @@
 		toolbar.initialize();
 	};
 
-	mw.veForAllUpdateAllFields = function () {
+	mw.veForAllUpdateAllFields = function ( $scope ) {
 		var promises = [];
 
-		$( '.visualeditor' ).each( function () {
+		( $scope || $( document ) ).find( '.visualeditor' ).each( function () {
 			var $textarea = $( this ),
 				target = $textarea.data( 'veForAllTarget' );
 
@@ -491,9 +490,20 @@
 	};
 
 	$( function () {
+		// Preserve early conversion for external save/preview integrations.
 		$( document ).on( 'mousedown', '#wpSave, #wpPreview, #wpDiff', function () {
 			mw.veForAllUpdateAllFields();
 		} );
+
+		function reportConversionFailure( $form, error ) {
+			$form.removeData( 'veforallSubmitPending veforallBypassSubmitOnce' );
+			if ( mw.log && mw.log.error ) {
+				mw.log.error( 'VEForAll: conversion failed; submission cancelled', error );
+			}
+			if ( typeof mw.notify === 'function' ) {
+				mw.notify( mw.msg( 'veforall-save-conversion-failed' ), { type: 'error' } );
+			}
+		}
 
 		$( document ).on( 'submit', 'form', function ( event ) {
 			var form = this,
@@ -502,37 +512,80 @@
 					event.originalEvent.submitter : null;
 
 			if ( $form.data( 'veforallBypassSubmitOnce' ) ) {
-				$form.removeData( 'veforallBypassSubmitOnce' );
+				$form.removeData( 'veforallBypassSubmitOnce veforallSubmitPending' );
+				return true;
+			}
+			if ( $form.data( 'veforallSubmitPending' ) ) {
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				return false;
+			}
+
+			var $fields = $form.find( 'textarea.visualeditor' );
+			if ( !$fields.length ) {
 				return true;
 			}
 
-			if ( $form.find( '.visualeditor' ).length === 0 ) {
+			// Unchanged VisualEditors and native textareas need no conversion.
+			var needsSync = $fields.toArray().some( function ( element ) {
+				var $field = $( element ),
+					target = $field.data( 'veForAllTarget' );
+				return !!$field.data( 'veForAllPendingPromise' ) ||
+					!!( target && ( target.pendingUpdatePromise ||
+						( !$field.is( ':visible' ) &&
+							$field.hasClass( 've-for-all-waiting-for-update' ) ) ) );
+			} );
+			if ( !needsSync ) {
 				return true;
 			}
 
 			event.preventDefault();
 			event.stopImmediatePropagation();
+			$form.data( 'veforallSubmitPending', true );
 
-			mw.veForAllUpdateAllFields().always( function () {
-				$form.data( 'veforallBypassSubmitOnce', true );
+			var initializing = typeof mw.veForAllWaitForPending === 'function' ?
+				mw.veForAllWaitForPending( $form ) : Promise.resolve();
 
-				window.setTimeout( function () {
-					if ( typeof form.requestSubmit === 'function' ) {
-						if ( submitter ) {
-							form.requestSubmit( submitter );
-						} else {
-							form.requestSubmit();
+			Promise.resolve( initializing )
+				.then( function () {
+					return mw.veForAllUpdateAllFields( $form );
+				} )
+				.then( function () {
+					window.setTimeout( function () {
+						if ( !document.documentElement.contains( form ) ) {
+							$form.removeData( 'veforallSubmitPending' );
+							return;
 						}
-					} else {
-						form.submit();
-					}
-				}, 0 );
-			} );
-
+						if ( typeof form.checkValidity === 'function' && !form.checkValidity() ) {
+							$form.removeData( 'veforallSubmitPending' );
+							if ( typeof form.reportValidity === 'function' ) {
+								form.reportValidity();
+							}
+							return;
+						}
+						$form.data( 'veforallBypassSubmitOnce', true );
+						try {
+							if ( typeof form.requestSubmit === 'function' ) {
+								if ( submitter && form.contains( submitter ) ) {
+									form.requestSubmit( submitter );
+								} else {
+									form.requestSubmit();
+								}
+							} else {
+								form.submit();
+								$form.removeData( 'veforallBypassSubmitOnce veforallSubmitPending' );
+							}
+						} catch ( error ) {
+							reportConversionFailure( $form, error );
+						}
+					}, 0 );
+				}, function ( error ) {
+					// Never submit stale textarea values after a Parsoid error.
+					reportConversionFailure( $form, error );
+				} );
 			return false;
 		} );
 	} );
-
 	// Registration
 	ve.init.mw.targetFactory.register( mw.veForAll.Target );
 

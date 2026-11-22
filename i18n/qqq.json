@@ -20,5 +20,6 @@
 	"veforall-api-error-unsupported-conversion": "Error message",
 	"veforall-api-error-unsupported-parser-conversion": "Error message",
 	"veforall-api-error-parsoid-error": "Error message",
-	"veforall-form-instances-not-minimized": "A warning message"
+	"veforall-form-instances-not-minimized": "A warning message",
+	"veforall-save-conversion-failed": "Error notification when saving is blocked because a VisualEditor field failed HTML-to-wikitext conversion; user edits remain in the editor."
 }
