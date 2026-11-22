@@ -27,7 +27,8 @@
 		"MakeGlobalVariablesScript": "VEForAll\\VEForAllHooks::onMakeGlobalVariablesScript"
 	},
 	"config": {
-		"VEForAllLazyPageForms": true
+		"VEForAllLazyPageForms": true,
+		"VEForAllMaxConversionBytes": 4194304
 	},
 	"MessagesDirs": {
 		"VEForAll": [
