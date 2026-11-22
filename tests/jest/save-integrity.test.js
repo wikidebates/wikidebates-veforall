@@ -16,7 +16,7 @@ beforeEach( async () => {
 	document.body.innerHTML = '';
 	post = jest.fn();
 	mw = {
-		config: { get: () => 'Test_page' },
+		config: { get: ( key ) => key === 'VEForAllToolbarNormal' ? [] : 'Test_page' },
 		msg: ( key ) => key,
 		notify: jest.fn(),
 		log: { error: jest.fn() },
