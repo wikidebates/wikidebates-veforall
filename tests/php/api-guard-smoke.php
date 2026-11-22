@@ -9,6 +9,11 @@ namespace MediaWiki\Title {
 }
 
 namespace {
+	// API old (MW 1.39-1.40) expects global Title; modern API uses
+	// MediaWiki\\Title\\Title. A global subclass satisfies both signatures.
+	class Title extends \MediaWiki\Title\Title {
+	}
+
 	class TestApiRejected extends \RuntimeException {
 	}
 
@@ -43,7 +48,7 @@ namespace {
 			$this->titleCalls++;
 			return new class {
 				public function getTitle() {
-					return new \MediaWiki\Title\Title();
+					return new \Title();
 				}
 			};
 		}
