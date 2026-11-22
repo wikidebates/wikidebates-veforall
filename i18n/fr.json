@@ -21,5 +21,6 @@
 	"veforall-form-instances-not-minimized": "Du fait des limitations du logiciel, certaines boîtes fermées doivent être développées avant de pouvoir soumettre ce formulaire. Veuillez le soumettre de nouveau maintenant.",
 	"veforall-save-conversion-failed": "Enregistrement interrompu : un champ de l’éditeur visuel n’a pas pu être converti en wikicode. Vos modifications sont toujours présentes. Veuillez réessayer.",
 	"veforall-save-content-changed": "Le contenu a changé pendant la préparation de l’enregistrement. L’envoi a été interrompu. Veuillez enregistrer à nouveau.",
-	"veforall-api-error-content-too-large": "Le contenu est trop volumineux pour la conversion VEForAll (maximum $1 octets)."
+	"veforall-api-error-content-too-large": "Le contenu est trop volumineux pour la conversion VEForAll (maximum $1 octets).",
+	"veforall-switch-conversion-failed": "Impossible de changer d’éditeur : la conversion du contenu a échoué. Vos modifications sont conservées ; veuillez réessayer."
 }

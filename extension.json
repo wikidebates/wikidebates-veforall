@@ -83,7 +83,8 @@
 				"veforall-switch-editor-tool-title",
 				"veforall-form-instances-not-minimized",
 				"veforall-save-conversion-failed",
-				"veforall-save-content-changed"
+				"veforall-save-content-changed",
+				"veforall-switch-conversion-failed"
 			],
 			"dependencies": [
 				"mediawiki.confirmCloseWindow"

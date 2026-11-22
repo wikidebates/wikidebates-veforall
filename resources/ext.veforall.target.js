@@ -293,38 +293,66 @@
 	};
 
 	mw.veForAll.Target.prototype.escapePipesInTables = function ( text ) {
-		var lines = text.split( '\n' ), i, curLine, withinTable = false;
+		var lines = text.split( '\n' ),
+			tableDepth = 0,
+			i, line;
 
-		// This algorithm will hopefully work for all cases except
-		// when there are template calls within the table, and those
-		// template calls include a pipe at the beginning of a line.
-		// That is hopefully a rare case (a template call within a
-		// table within a template call) that hopefully does not
-		// justify creating more complex handling.
+		// Table syntax needs escaped separators inside template fields. Leave
+		// nested template arguments and wikilink labels alone: their pipes
+		// already belong to the nested construct, not to the table.
+		function escapeTableDelimiters( value ) {
+			var escaped = '',
+				templateDepth = 0,
+				linkDepth = 0,
+				offset = 0,
+				pair;
+
+			while ( offset < value.length ) {
+				pair = value.slice( offset, offset + 2 );
+				if ( pair === '{{' ) {
+					templateDepth++;
+				} else if ( pair === '}}' && templateDepth > 0 ) {
+					templateDepth--;
+				} else if ( pair === '[[' ) {
+					linkDepth++;
+				} else if ( pair === ']]' && linkDepth > 0 ) {
+					linkDepth--;
+				} else {
+					escaped += value.charAt( offset ) === '|' &&
+						templateDepth === 0 && linkDepth === 0 ?
+						'{{!}}' : value.charAt( offset );
+					offset++;
+					continue;
+				}
+				escaped += pair;
+				offset += 2;
+			}
+			return escaped;
+		}
+
 		for ( i = 0; i < lines.length; i++ ) {
-			curLine = lines[ i ];
-			// start of table is {|, but could be also escaped, like this: {{{!}}
-			if ( curLine.indexOf( '{|' ) === 0 || curLine.indexOf( '{{{!}}' ) === 0 ) {
-				withinTable = true;
-				lines[ i ] = curLine.replace( /\|/g, '{{!}}' );
-			} else if ( withinTable && curLine.indexOf( '|' ) === 0 ) {
-				lines[ i ] = curLine.replace( /\|/g, '{{!}}' );
-			}
-			// Table caption case (`|+`). See https://www.mediawiki.org/wiki/Help:Tables
-			if ( withinTable && curLine.indexOf( '|+' ) > -1 ) {
-				lines[ i ] = curLine.replace( /\|\+/g, '{{!}}+' );
-			}
-			// colspan/rowspan case (`|rowspan=`/`|colspan=`). See https://www.mediawiki.org/wiki/Help:Tables
-			if ( withinTable && ( curLine.indexOf( 'colspan' ) > -1 || curLine.indexOf( 'rowspan' ) > -1 ) ) {
-				lines[ i ] = curLine.replace( /(colspan|rowspan)="(\d+?)"\s{0,}\|/, '$1="$2" {{!}}' ).replace( /^\s{0,}\|/, '{{!}} ' );
-			}
-			if ( curLine.indexOf( '|}' ) === 0 ) {
-				withinTable = false;
+			line = lines[ i ];
+			if ( line.indexOf( '{|' ) === 0 || line.indexOf( '{{{!}}' ) === 0 ) {
+				tableDepth++;
+				lines[ i ] = escapeTableDelimiters( line );
+			} else if ( tableDepth > 0 &&
+				( line.indexOf( '|}' ) === 0 || line.indexOf( '{{!}}}' ) === 0 )
+			) {
+				// The closing delimiter must be escaped too; for nested
+				// tables, closing the inner one must not end the outer table.
+				lines[ i ] = escapeTableDelimiters( line );
+				tableDepth--;
+			} else if ( tableDepth > 0 &&
+				( line.charAt( 0 ) === '|' || line.charAt( 0 ) === '!' ||
+					line.indexOf( '{{!}}' ) === 0 )
+			) {
+				// A single pass preserves escaped captions, span attributes
+				// and later cell separators on the same line.
+				lines[ i ] = escapeTableDelimiters( line );
 			}
 		}
 		return lines.join( '\n' );
 	};
-
 	mw.veForAll.Target.prototype.convertToWikiText = function ( content, shouldApply ) {
 		var target = this;
 
@@ -413,41 +441,59 @@
 
 	mw.veForAll.Target.prototype.switchEditor = function () {
 		var textarea = this.$node,
-			target = this;
+			target = this,
+			$wrapper = textarea.parent(),
+			conversion;
 
-		if ( $( textarea ).is( ':visible' ) ) {
-			// Switch to VE editor
+		// Ignore repeated clicks while a conversion is in progress.
+		if ( this.switchEditorPending ) {
+			return this.switchEditorPending;
+		}
 
+		function showConversionFailure( error ) {
+			if ( mw.log && mw.log.error ) {
+				mw.log.error( 'VEForAll: editor switch conversion failed', error );
+			}
+			if ( typeof mw.notify === 'function' ) {
+				mw.notify( mw.msg( 'veforall-switch-conversion-failed' ), {
+					type: 'error'
+				} );
+			}
+		}
+
+		if ( textarea.is( ':visible' ) ) {
+			// Source -> visual: leave the icon and tooltip in source mode
+			// until Parsoid has successfully created the visual surface.
 			this.clearSurfaces();
-			// $( textarea ).hide();
-			// $(this.getSurface().$element).show();
-			this.convertToHtml( $( textarea ).val(), function ( target ) {
-				target.getSurface().getView().focus();
+			conversion = this.convertToHtml( textarea.val(), function ( convertedTarget ) {
+				convertedTarget.getSurface().getView().focus();
+			} ).then( function () {
+				$wrapper.find( '.oo-ui-icon-eye' )
+					.removeClass( 'oo-ui-icon-eye' )
+					.addClass( 'oo-ui-icon-wikiText' );
+				$wrapper.find( '.oo-ui-tool-link' )
+					.attr( 'title', OO.ui.deferMsg( 'veforall-switch-editor-tool-title' ) );
 			} );
-
-			$( textarea ).parent().find( '.oo-ui-icon-eye' )
-				.removeClass( 'oo-ui-icon-eye' )
-				.addClass( 'oo-ui-icon-wikiText' );
-
-			$( textarea ).parent().find( '.oo-ui-tool-link' )
-				.attr( 'title', OO.ui.deferMsg( 'veforall-switch-editor-tool-title' ) );
 		} else {
-			// Switch to markup editor
-
-			$( textarea ).parent().find( '.oo-ui-icon-wikiText' )
-				.removeClass( 'oo-ui-icon-wikiText' )
-				.addClass( 'oo-ui-icon-eye' );
-
-			$( textarea ).parent().find( '.oo-ui-tool-link' )
-				.attr( 'title', OO.ui.deferMsg( 'visualeditor-welcomedialog-switch-ve' ) );
-
-			this.updateContent().then( function () {
+			// Visual -> source: preserve the visual surface and its button if
+			// conversion fails, so the user can retry without losing edits.
+			conversion = this.updateContent().then( function () {
 				$( target.getSurface().$element ).hide();
-				$( textarea ).show().trigger( 'focus' );
+				textarea.show().trigger( 'focus' );
+				$wrapper.find( '.oo-ui-icon-wikiText' )
+					.removeClass( 'oo-ui-icon-wikiText' )
+					.addClass( 'oo-ui-icon-eye' );
+				$wrapper.find( '.oo-ui-tool-link' )
+					.attr( 'title', OO.ui.deferMsg( 'visualeditor-welcomedialog-switch-ve' ) );
 			} );
 		}
-	};
 
+		this.switchEditorPending = conversion;
+		conversion.fail( showConversionFailure ).always( function () {
+			target.switchEditorPending = null;
+		} );
+		return conversion;
+	};
 	/**
 	 * Attach the toolbar to the DOM
 	 * redefine attach Toolbar function to place on the bottom

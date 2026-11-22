@@ -23,5 +23,6 @@
 	"veforall-form-instances-not-minimized": "A warning message",
 	"veforall-save-conversion-failed": "Error notification when saving is blocked because a VisualEditor field failed HTML-to-wikitext conversion; user edits remain in the editor.",
 	"veforall-save-content-changed": "Notification when a VisualEditor field changes after successful Parsoid conversion but before submission. The form is not submitted to avoid stale data.",
-	"veforall-api-error-content-too-large": "API error shown when a client sends content exceeding the configurable maximum of VEForAllMaxConversionBytes (parameter $1, in bytes)."
+	"veforall-api-error-content-too-large": "API error shown when a client sends content exceeding the configurable maximum of VEForAllMaxConversionBytes (parameter $1, in bytes).",
+	"veforall-switch-conversion-failed": "Error notification if the Parsoid conversion fails while switching between the visual and wikitext editors. The user can retry without losing changes."
 }
