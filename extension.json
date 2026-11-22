@@ -79,7 +79,8 @@
 			"messages": [
 				"visualeditor-welcomedialog-switch-ve",
 				"veforall-switch-editor-tool-title",
-				"veforall-form-instances-not-minimized"
+				"veforall-form-instances-not-minimized",
+				"veforall-save-conversion-failed"
 			],
 			"dependencies": [
 				"mediawiki.confirmCloseWindow"
