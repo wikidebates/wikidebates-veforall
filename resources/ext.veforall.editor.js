@@ -145,19 +145,10 @@
 	 * @return {string}
 	 */
 	mw.veForAll.Editor.prototype.getRawContent = function () {
-		var doc, html;
-
-		// If we haven't fully loaded yet, just return nothing.
-		if ( !this.target ) {
-			return '';
-		}
-
-		// get document from ve
-		doc = ve.dm.converter.getDomFromModel( this.dmDoc );
-
-		// document content will include html, head & body nodes; get only content inside body node
-		html = ve.properInnerHtml( $( doc.documentElement ).find( 'body' )[ 0 ] );
-		return html;
+		// VEForAll's document belongs to the target surface, not Editor.dmDoc.
+		var surface = this.target && this.target.getSurface && this.target.getSurface();
+		return surface && typeof surface.getHtml === 'function' ?
+			surface.getHtml() : '';
 	};
 
 	/**
@@ -166,12 +157,11 @@
 	 * @return {boolean} True if and only if it's empty
 	 */
 	mw.veForAll.Editor.prototype.isEmpty = function () {
-		if ( !this.dmDoc ) {
+		var surface = this.target && this.target.getSurface && this.target.getSurface();
+		if ( !surface || !surface.getModel() ) {
 			return true;
 		}
-
-		// Per Roan
-		return this.dmDoc.data.countNonInternalElements() <= 2;
+		return surface.getModel().getDocument().data.countNonInternalElements() <= 2;
 	};
 
 	mw.veForAll.Editor.prototype.focus = function () {

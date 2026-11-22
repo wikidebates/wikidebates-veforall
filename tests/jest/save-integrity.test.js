@@ -171,3 +171,25 @@ test( 'editor callback queues are not shared between instances', () => {
 	expect( editor ).toContain( 'this.initCallbacks = [];' );
 	expect( editor ).not.toMatch( /Editor\.prototype\.initCallbacks\s*=\s*\[\]/ );
 } );
+
+test( 'edits after serialization cancel the final requestSubmit', async () => {
+	const { $form, $node, target } = fixture();
+	const requestSubmit = jest.fn();
+	$form[ 0 ].requestSubmit = requestSubmit;
+	// Called in the delayed continuation, after Parsoid has finished.
+	$form[ 0 ].checkValidity = () => {
+		target.contentRevision++;
+		$node.addClass( 've-for-all-waiting-for-update' );
+		return true;
+	};
+	post.mockReturnValue( $.Deferred().resolve( {
+		'veforall-parsoid-utils': { content: 'before the late edit' }
+	} ).promise() );
+
+	expect( submit( $form ) ).toBe( false );
+	await waitUntil( () => mw.notify.mock.calls.length === 1 );
+	expect( requestSubmit ).not.toHaveBeenCalled();
+	expect( $form.data( 'veforallSubmitPending' ) ).toBeUndefined();
+	expect( $node.hasClass( 've-for-all-waiting-for-update' ) ).toBe( true );
+	expect( mw.notify.mock.calls[ 0 ][ 0 ] ).toBe( 'veforall-save-content-changed' );
+} );

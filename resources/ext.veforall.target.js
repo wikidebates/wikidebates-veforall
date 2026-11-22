@@ -495,13 +495,15 @@
 			mw.veForAllUpdateAllFields();
 		} );
 
-		function reportConversionFailure( $form, error ) {
+		function reportSubmissionError( $form, error, messageKey ) {
 			$form.removeData( 'veforallSubmitPending veforallBypassSubmitOnce' );
 			if ( mw.log && mw.log.error ) {
-				mw.log.error( 'VEForAll: conversion failed; submission cancelled', error );
+				mw.log.error( 'VEForAll: submission cancelled', error );
 			}
 			if ( typeof mw.notify === 'function' ) {
-				mw.notify( mw.msg( 'veforall-save-conversion-failed' ), { type: 'error' } );
+				mw.notify( mw.msg( messageKey || 'veforall-save-conversion-failed' ), {
+					type: 'error'
+				} );
 			}
 		}
 
@@ -551,6 +553,16 @@
 					return mw.veForAllUpdateAllFields( $form );
 				} )
 				.then( function () {
+					// A new edit between Parsoid completion and requestSubmit
+					// must not bypass the synchronized content.
+					var syncedEditors = $fields.toArray().map( function ( element ) {
+						var target = $( element ).data( 'veForAllTarget' );
+						return {
+							element: element,
+							target: target,
+							revision: target ? target.contentRevision : null
+						};
+					} );
 					window.setTimeout( function () {
 						if ( !document.documentElement.contains( form ) ) {
 							$form.removeData( 'veforallSubmitPending' );
@@ -561,6 +573,26 @@
 							if ( typeof form.reportValidity === 'function' ) {
 								form.reportValidity();
 							}
+							return;
+						}
+						var changed = syncedEditors.some( function ( item ) {
+							var $field = $( item.element ),
+								target = $field.data( 'veForAllTarget' );
+							return target !== item.target ||
+								!!$field.data( 'veForAllPendingPromise' ) ||
+								!!( target && (
+									target.contentRevision !== item.revision ||
+									target.pendingUpdatePromise ||
+									( !$field.is( ':visible' ) &&
+										$field.hasClass( 've-for-all-waiting-for-update' ) )
+								) );
+						} );
+						if ( changed ) {
+							reportSubmissionError(
+								$form,
+								new Error( 'VisualEditor changed after conversion' ),
+								'veforall-save-content-changed'
+							);
 							return;
 						}
 						$form.data( 'veforallBypassSubmitOnce', true );
@@ -576,12 +608,12 @@
 								$form.removeData( 'veforallBypassSubmitOnce veforallSubmitPending' );
 							}
 						} catch ( error ) {
-							reportConversionFailure( $form, error );
+							reportSubmissionError( $form, error );
 						}
 					}, 0 );
 				}, function ( error ) {
 					// Never submit stale textarea values after a Parsoid error.
-					reportConversionFailure( $form, error );
+					reportSubmissionError( $form, error );
 				} );
 			return false;
 		} );
