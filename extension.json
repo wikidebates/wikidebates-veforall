@@ -81,7 +81,8 @@
 				"visualeditor-welcomedialog-switch-ve",
 				"veforall-switch-editor-tool-title",
 				"veforall-form-instances-not-minimized",
-				"veforall-save-conversion-failed"
+				"veforall-save-conversion-failed",
+				"veforall-save-content-changed"
 			],
 			"dependencies": [
 				"mediawiki.confirmCloseWindow"
