@@ -19,8 +19,28 @@ use Title;
  */
 class ApiParsoidUtilsOld extends ApiBase {
 
+	/**
+	 * Conversions can include large HTML bodies; keep them out of GET requests.
+	 * The extension's JavaScript already uses mw.Api().post().
+	 *
+	 * @return bool
+	 */
+	public function mustBePosted() {
+		return true;
+	}
+
 	public function execute() {
 		$params = $this->extractRequestParams();
+		$maxBytes = (int)$this->getConfig()->get( 'VEForAllMaxConversionBytes' );
+		if ( $maxBytes > 0 && strlen( $params['content'] ) > $maxBytes ) {
+			// Refuse oversized input before costly Parsoid parsing.
+			$this->dieWithError(
+				[ 'veforall-api-error-content-too-large', $maxBytes ],
+				'veforall-content-too-large',
+				null,
+				413
+			);
+		}
 		$page = $this->getTitleOrPageId( $params );
 		$content = $this->convert( $params['from'], $params['to'],
 			$params['content'], $page->getTitle() );

@@ -20,7 +20,8 @@ Wikidebates integration (MediaWiki 1.43)
 ----------------------------------------
 
 The former stand-alone VEForAllMobileDeps extension has been integrated into
-this fork. On Minerva, VEForAll registers its own scoped mobile-toolbar CSS.
+this fork. On Minerva, VEForAll registers its scoped mobile-toolbar CSS
+through ext.veforall.main, rather than loading it on ordinary read pages.
 The mobile VE bundles are declared as ResourceLoader dependencies of
 ext.veforall.core.mobile and are requested on first editor visibility/focus
 instead of being preloaded on every mobile page.
@@ -40,3 +41,13 @@ Page Forms and desktop/Flow editors still load, edit and save correctly.
 
 Page Forms VisualEditor content also receives 0.75rem horizontal padding,
 matching the input-field spacing. This override is limited to #pfForm.
+
+Parsoid API input protection
+----------------------------
+
+The veforall-parsoid-utils API requires POST; VEForAll already sends POST
+requests from its editor. To avoid expensive unbounded conversions, inputs
+are limited to 4 MiB by default (measured in UTF-8 bytes before parsing).
+Change $wgVEForAllMaxConversionBytes in LocalSettings.php if your editor
+fields require a different cap. Use 0 to disable the size limit. This is
+a per-request size guard, not an API rate limiter.

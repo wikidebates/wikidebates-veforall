@@ -16,5 +16,6 @@
 	"veforall-api-error-parsoid-error": "Request to $1 for $2 to $3 conversion of content connected to title $4 failed: $5",
 	"veforall-form-instances-not-minimized": "Due to limitations in the software, some collapsed boxes had to be expanded before this form could be submitted. Please re-submit the form now.",
 	"veforall-save-conversion-failed": "Unable to save: a VisualEditor field could not be converted to wikitext. Your edits are still present. Please retry.",
-	"veforall-save-content-changed": "Your edits changed while the form was being saved. The submission was cancelled. Please save again."
+	"veforall-save-content-changed": "Your edits changed while the form was being saved. The submission was cancelled. Please save again.",
+	"veforall-api-error-content-too-large": "The content is too large for VEForAll conversion (maximum $1 bytes)."
 }
