@@ -9,6 +9,16 @@ namespace MediaWiki {
 		public static function getInstance(): self {
 			return new self();
 		}
+		public function getHookContainer() {
+			return new class {
+				public function run( string $name, array $arguments ): bool {
+					if ( $name === 'VEForAllToolbarConfigNormal' ) {
+						$arguments[0][] = [ 'include' => [ 'custom-tool' ] ];
+					}
+					return true;
+				}
+			};
+		}
 		public function getService( string $name ) {
 			if ( $name !== 'MobileFrontend.Context' ) {
 				throw new \RuntimeException( 'Unexpected service: ' . $name );
@@ -104,6 +114,18 @@ namespace {
 	testCase( 'minerva', 'formedit', [ 'ext.veforall.mobileToolbar' ] );
 	testCase( 'minerva', 'view', [ 'ext.veforall.mobileToolbar' ] );
 	testCase( 'vector-2022', 'formedit', [] );
+
+	// A hook that appends to the configuration must not change the static
+	// default for the next call (important on long-lived PHP workers).
+	$normalA = \VEForAll\VEForAllHooks::getVeToolbarConfig( 'normal' );
+	$normalB = \VEForAll\VEForAllHooks::getVeToolbarConfig( 'normal' );
+	$wide = \VEForAll\VEForAllHooks::getVeToolbarConfig( 'wide' );
+	if ( $normalA !== $normalB ||
+		count( $normalA ) !== count( $wide ) + 1 ||
+		end( $normalA ) !== [ 'include' => [ 'custom-tool' ] ]
+	) {
+		throw new \RuntimeException( 'Toolbar defaults were mutated across calls' );
+	}
 
 	echo "Minerva toolbar hook smoke checks passed.\n";
 }
