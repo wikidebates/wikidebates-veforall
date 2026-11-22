@@ -207,9 +207,12 @@ class VEForAllHooks {
 	 * @throws MWException
 	 */
 	public static function getVeToolbarConfig( $type = 'normal' ) {
+		// Hooks receive a fresh copy: changes for one invocation must not
+		// accumulate in the static defaults or leak across subsequent calls.
+		$config = self::$defaultConfig[ $type ];
 		MediaWikiServices::getInstance()->getHookContainer()
-			->run( 'VEForAllToolbarConfig' . ucfirst( $type ), [ &self::$defaultConfig[ $type ] ] );
-		return array_values( self::$defaultConfig[ $type ] );
+			->run( 'VEForAllToolbarConfig' . ucfirst( $type ), [ &$config ] );
+		return array_values( $config );
 	}
 
 }
