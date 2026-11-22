@@ -147,6 +147,8 @@ test( 'initializing editor must finish before submission resumes', async () => {
 	$form[ 0 ].requestSubmit = requestSubmit;
 	expect( submit( $form ) ).toBe( false );
 	expect( requestSubmit ).not.toHaveBeenCalled();
+	// Real startEditor() removes this marker before its ready promise settles.
+	$node.removeData( 'veForAllPendingPromise' );
 	d.resolve();
 	await waitUntil( () => requestSubmit.mock.calls.length === 1 );
 	expect( requestSubmit ).toHaveBeenCalledTimes( 1 );
