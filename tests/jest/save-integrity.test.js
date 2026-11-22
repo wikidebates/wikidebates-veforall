@@ -8,6 +8,15 @@ const source = fs.readFileSync(
 	path.join( __dirname, '../../resources/ext.veforall.target.js' ), 'utf8'
 );
 const flush = () => new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+async function waitUntil( check ) {
+	for ( let i = 0; i < 20; i++ ) {
+		if ( check() ) {
+			return;
+		}
+		await flush();
+	}
+	throw new Error( 'Asynchronous condition was not reached' );
+}
 let mw;
 let post;
 
@@ -39,6 +48,7 @@ beforeEach( async () => {
 		copy: ( x ) => JSON.parse( JSON.stringify( x ) )
 	};
 	Function( 'mediaWiki', 'OO', 've', '$', source )( mw, OO, ve, $ );
+	await flush();
 	await flush();
 } );
 
@@ -76,8 +86,7 @@ test( 'a failed conversion blocks submission, preserves edits and allows another
 			'veforall-parsoid-utils': { content: 'updated' }
 		} ).promise() );
 	expect( submit( $form ) ).toBe( false );
-	await flush();
-	await flush();
+	await waitUntil( () => mw.notify.mock.calls.length === 1 );
 	expect( requestSubmit ).not.toHaveBeenCalled();
 	expect( mw.notify ).toHaveBeenCalledTimes( 1 );
 	expect( $node.val() ).toBe( 'old' );
@@ -85,8 +94,7 @@ test( 'a failed conversion blocks submission, preserves edits and allows another
 	expect( $node.hasClass( 'oo-ui-texture-pending' ) ).toBe( false );
 	expect( $form.data( 'veforallSubmitPending' ) ).toBeUndefined();
 	expect( submit( $form ) ).toBe( false );
-	await flush();
-	await flush();
+	await waitUntil( () => requestSubmit.mock.calls.length === 1 );
 	expect( requestSubmit ).toHaveBeenCalledTimes( 1 );
 	expect( $node.val() ).toBe( 'updated' );
 } );
@@ -104,7 +112,7 @@ test( 'stale Parsoid reply cannot overwrite a newer edit', async () => {
 	expect( target.updateContent() ).toBe( saving );
 	target.contentRevision = 2;
 	first.resolve( { 'veforall-parsoid-utils': { content: 'stale' } } );
-	await flush();
+	await waitUntil( () => post.mock.calls.length === 2 );
 	expect( $node.val() ).not.toBe( 'stale' );
 	expect( post ).toHaveBeenCalledTimes( 2 );
 	second.resolve( { 'veforall-parsoid-utils': { content: 'current' } } );
@@ -140,8 +148,7 @@ test( 'initializing editor must finish before submission resumes', async () => {
 	expect( submit( $form ) ).toBe( false );
 	expect( requestSubmit ).not.toHaveBeenCalled();
 	d.resolve();
-	await flush();
-	await flush();
+	await waitUntil( () => requestSubmit.mock.calls.length === 1 );
 	expect( requestSubmit ).toHaveBeenCalledTimes( 1 );
 } );
 
