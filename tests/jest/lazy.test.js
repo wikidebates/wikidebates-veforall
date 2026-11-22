@@ -11,9 +11,9 @@ let observe;
 let editor;
 let mw;
 
-async function boot( config = {}, form = true ) {
+async function boot( config = {}, form = true, hasEditor = true ) {
 	document.body.innerHTML = ( form ? '<form id="pfForm">' : '<div>' ) +
-		'<textarea class="visualeditor" id="body">First</textarea>' +
+		( hasEditor ? '<textarea class="visualeditor" id="body">First</textarea>' : '' ) +
 		( form ? '</form>' : '</div>' );
 	observe = undefined;
 	window.IntersectionObserver = class {
@@ -158,4 +158,12 @@ test( 'failed editor readiness leaves the raw textarea usable for another attemp
 	env.$field.trigger( 'pointerdown' );
 	await mw.veForAllWaitForPending( $( '#pfForm' ) );
 	expect( env.editor ).toHaveBeenCalledTimes( 2 );
+} );
+
+
+test( 'pages without a VEForAll field do not load VisualEditor', async () => {
+	const env = await boot( { wgVEForAllLazyPageForms: true }, false, false );
+	await flush();
+	expect( env.using ).not.toHaveBeenCalled();
+	expect( env.editor ).not.toHaveBeenCalled();
 } );

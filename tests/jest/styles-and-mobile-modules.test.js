@@ -106,3 +106,14 @@ test( 'mobile bundle depends only on existing MediaWiki 1.43 module names', () =
 	expect( mobile.dependencies ).not.toContain( 'ext.visualEditor.mobile' );
 	expect( styles.styles ).toEqual( [ 'resources/mobileToolbarFix.css' ] );
 } );
+
+
+test( 'Minerva toolbar CSS is loaded only with a VEForAll editor, not globally on read pages', () => {
+	const manifest = JSON.parse( file( 'extension.json' ) );
+	expect( manifest.ResourceModules[ 'ext.veforall.main' ].styles ).toContain(
+		'resources/mobileToolbarFix.css'
+	);
+	expect( file( 'includes/VEForAllHooks.php' ) ).not.toContain(
+		"addModuleStyles( [ 'ext.veforall.mobileToolbar' ] )"
+	);
+} );

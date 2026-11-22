@@ -74,7 +74,8 @@
 				"resources/VEForAll.js"
 			],
 			"styles": [
-				"resources/VEForAll.css"
+				"resources/VEForAll.css",
+				"resources/mobileToolbarFix.css"
 			],
 			"messages": [
 				"visualeditor-welcomedialog-switch-ve",

@@ -111,8 +111,11 @@ namespace {
 		}
 	}
 
-	testCase( 'minerva', 'formedit', [ 'ext.veforall.mobileToolbar' ] );
-	testCase( 'minerva', 'view', [ 'ext.veforall.mobileToolbar' ] );
+	// The mobile stylesheet is bundled with ext.veforall.main instead of
+	// appearing on every Minerva page, including ordinary reading.
+	testCase( 'minerva', 'formedit', [] );
+	testCase( 'minerva', 'view', [] );
+	testCase( 'vector-2022', 'view', [] );
 	testCase( 'vector-2022', 'formedit', [] );
 
 	// A hook that appends to the configuration must not change the static

@@ -191,9 +191,9 @@
 		if ( $form.length ) {
 			applyVisualEditorToExistingFields( $form );
 		} else {
-			// Preserve eager initialization for non-Page Forms users (e.g. Flow).
-			initVisualEditor().then( () => applyVisualEditorToExistingFields() )
-				.catch( () => {} );
+			// Existing non-Page-Forms fields still initialize immediately.
+			// Do not fetch the VE platform if this page has no editor at all.
+			applyVisualEditorToExistingFields();
 		}
 	} );
 
