@@ -159,18 +159,20 @@ class VEForAllHooks {
 	 * @param Skin $skin Skin object that will be used to generate the page
 	 */
 	public static function onBeforePageDisplay( $output, $skin ) {
-		// Keep the former VEForAllMobileDeps toolbar fix inside VEForAll.
-		// Only its styles are loaded eagerly; heavyweight VE dependencies
-		// are loaded by VEForAll.js when an editor becomes visible/focused.
-		if ( $skin->getSkinName() === 'minerva' ) {
-			$output->addModuleStyles( [ 'ext.veforall.mobileToolbar' ] );
+		// Toolbar styles now belong to ext.veforall.main, which Page Forms
+		// loads only when an actual VEForAll textarea is on the page.
+		// Do not ship VisualEditor dependencies on ordinary read pages.
+		// VEForAll.js loads the required core/mobile/desktop modules when
+		// an editor is initialized. Flow manages its own VE dependencies.
+		$action = $output->getRequest()->getVal( 'action' ) ?: 'view';
+		$title = $output->getTitle();
+		$isFormEdit = $action === 'formedit' ||
+			( $title && $title->isSpecial( 'FormEdit' ) );
+		if ( $action === 'view' && !$isFormEdit ) {
+			return;
 		}
 
-		// Page Forms loads VE modules on first visible/focused editor. Other
-		// contexts, including Flow, keep their original eager desktop setup.
-		$title = $output->getTitle();
-		$isFormEdit = $output->getRequest()->getVal( 'action' ) === 'formedit' ||
-			( $title && $title->isSpecial( 'FormEdit' ) );
+		// Preserve the legacy eager path for other non-Page-Forms actions.
 		if ( $output->getConfig()->get( 'VEForAllLazyPageForms' ) && $isFormEdit ) {
 			return;
 		}
