@@ -3,7 +3,7 @@
 	"on": {
 		"push": {
 			"branches": [
-				"improve/veforall-lazy-pageforms-2026-11-21"
+				"main"
 			]
 		},
 		"pull_request": {}
